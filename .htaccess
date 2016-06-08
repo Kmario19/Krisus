@@ -1,0 +1,50 @@
+## Manejo de errores de Apache. Cuando se produzca uno de estos errores, redirigimos a una pagina especial desarrollada por nosotros.
+ErrorDocument 401 /error401.html
+ErrorDocument 403 /error403.html
+ErrorDocument 404 /error404.html
+  
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+ 
+Options +FollowSymLinks
+# Evitar escaneos y cualquier intento de manipulación malintencionada
+# de la URL. Con esta regla es imposible lanzar ataques de inyección (SQL, XSS, etc)
+RewriteCond %{HTTP_USER_AGENT} ^$ [OR]
+RewriteCond %{HTTP_USER_AGENT} ^(-|\.|') [OR]
+RewriteCond %{HTTP_USER_AGENT} ^(.*)(<|>|%3C|%3E)(.*) [NC,OR]
+RewriteCond %{HTTP_USER_AGENT} ^(java|curl|wget)(.*) [NC,OR]
+RewriteCond %{HTTP_USER_AGENT} ^(.*)(libwww-perl|libwwwperl|snoopy|curl|wget|winhttp|python|nikto|scan|clshttp|archiver|loader|email|harvest|fetch|extract|grab|miner|suck|reaper|leach)(.*) [NC,OR]
+ 
+RewriteCond %{REQUEST_URI} ^(/,|/;|/<|/>|/'|/`|/%2C|/%3C|/%3E|/%27|/////) [NC,OR]
+RewriteCond %{HTTP_REFERER} ^(.*)(%00|%08|%09|%0A|%0B|%0C|%0D|%0E|%0F|%2C|<|>|'|%3C|%3E|%26%23|%27|%60)(.*) [NC,OR]
+RewriteCond %{QUERY_STRING} ^(.*)(%00|%08|%09|%0A|%0B|%0C|%0D|%0E|%0F|%2C|%3C|%3E|%27|%26%23|%60)(.*) [NC,OR]
+RewriteCond %{QUERY_STRING} ^(.*)('|-|<|>|,|/|\\|\.a|\.c|\.t|\.d|\.p|\.i|\.e|\.j)(.*) [NC,OR]
+RewriteCond %{HTTP_COOKIE} ^(.*)(<|>|'|%3C|%3E|%27)(.*) [NC]
+ 
+## Evitar que se liste el contenido de los directorios
+Options All -Indexes
+## Lo mismo que lo anterior
+IndexIgnore *
+# Protegerse contra los ataques DOS limitando el tamaño de subida de archivos
+LimitRequestBody 10240000
+
+RewriteRule ^$ index.php [QSA,L]
+
+RewriteRule ^([A-Za-z0-9_-]+)/mi/([A-Za-z0-9]+)$ index.php?seccion=mi&accion=ver&user=$1&sid=$2 [QSA,L]
+RewriteRule ^posts/([A-Za-z0-9_-]+)/([0-9]+)/(.*).html$ index.php?seccion=posts&cat=$1&post_id=$2&title=$3 [QSA,L]
+RewriteRule ^comunidades/([A-Za-z0-9_-]+)/([0-9]+)/([A-Za-z0-9_-]+).html$ index.php?seccion=comunidades&accion=$1&accionDos=tema&temaid=$2 [QSA,L]
+RewriteRule ^moderacion/buscador/([0-9]+)/([0-9]+)/([0-9]+)/(.*) index.php?seccion=moderacion&accion=buscador&accionDos=search&m=$1&t=$2&c=$3&texto=$4 [QSA,L]
+RewriteRule ^moderacion/buscador/([0-9]+)/([0-9]+)/(.*) index.php?seccion=moderacion&accion=buscador&accionDos=search&m=$1&t=$2&texto=$3 [QSA,L]
+
+RewriteRule ^([A-Za-z]+)-([A-Za-z_-]+).php$ ajax.php?seccion=$1&accion=$2 [QSA,L]
+RewriteRule ^([A-Za-z0-9_-]+\/?)$ index.php?seccion=$1 [QSA,L]
+RewriteRule ^([A-Za-z0-9_-]+)/([A-Za-z0-9_-]+\/?)$ index.php?seccion=$1&accion=$2 [QSA,L]
+RewriteRule ^([A-Za-z0-9_-]+)/([A-Za-z0-9_-]+)/([A-Za-z0-9_-]+\/?)$ index.php?seccion=$1&accion=$2&accionDos=$3 [QSA,L]
+RewriteRule ^([A-Za-z0-9_-]+)/([A-Za-z0-9_-]+)/([A-Za-z0-9_-]+)/([A-Za-z0-9_-]+\/?)$ index.php?seccion=$1&accion=$2&accionDos=$3&accionTres=$4 [QSA,L]
+
+#NO PERMITIR LA DESCARGA DE ARCHIVOS .TPL
+<FilesMatch "\.(htaccess|ini|log|cfg|tpl)$">
+Order Allow,Deny
+Deny from all
+</FilesMatch>
